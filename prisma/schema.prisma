@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Script {
+  id String @id @default(uuid())
+
+  title       String
+  explanation String  @db.Text
+  script      String? @db.Text
+  author      String?
+
+  tags     String[]
+  comments Comment[]
+
+  status       ScriptStatus @default(DEPLOYED)
+  externalLink String?
+  results      String[]     @db.Text
+
+  assistant   Assistant @relation(fields: [assistantId], references: [id])
+  assistantId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id       String @id @default(uuid())
+  author   String
+  scriptId String
+  content  String @db.Text
+
+  script Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Assistant {
+  id         String @id @default(uuid())
+  externalId String
+  name       String
+
+  scripts Script[]
+  skills  AssistantSkill[]
+
+  personalities String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Skill {
+  id   String @id @default(uuid())
+  name String
+
+  assistants AssistantSkill[]
+}
+
+model AssistantSkill {
+  assistantId String
+  skillId     String
+  value       Int
+
+  assistant Assistant @relation(fields: [assistantId], references: [id])
+  skill     Skill     @relation(fields: [skillId], references: [id])
+
+  @@id([assistantId, skillId])
+}
+
+enum ScriptStatus {
+  DEPLOYED
+  LAUNCHED
+}
